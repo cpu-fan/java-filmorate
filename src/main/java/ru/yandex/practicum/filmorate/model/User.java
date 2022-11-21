@@ -2,16 +2,12 @@ package ru.yandex.practicum.filmorate.model;
 
 import lombok.Builder;
 import lombok.Data;
-import org.springframework.format.annotation.DateTimeFormat;
 
-import javax.validation.constraints.Email;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Past;
-import javax.validation.constraints.Pattern;
+import javax.validation.constraints.*;
 import java.time.LocalDate;
 
 @Data
-@Builder
+@Builder(toBuilder = true)
 public class User {
 
     private int id;
@@ -26,6 +22,6 @@ public class User {
 
     private String name;
 
-    @Past(message = "Дата рождения не может быть в будущем")
+    @PastOrPresent(message = "Дата рождения не может быть в будущем")
     private LocalDate birthday;
 }
