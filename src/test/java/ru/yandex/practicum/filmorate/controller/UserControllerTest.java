@@ -9,6 +9,7 @@ import com.google.gson.stream.JsonWriter;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import ru.yandex.practicum.filmorate.FilmorateApplication;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.io.IOException;
@@ -31,6 +32,7 @@ class UserControllerTest {
 
     @BeforeAll
     static void setUpBeforeAll() {
+        FilmorateApplication.main(new String[] {});
         gson = new GsonBuilder()
                 .registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
                 .create();
