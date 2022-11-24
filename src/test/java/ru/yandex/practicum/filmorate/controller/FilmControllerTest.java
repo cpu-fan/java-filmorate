@@ -7,10 +7,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import ru.yandex.practicum.filmorate.controller.utils.testadapters.LocalDateAdapter;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -20,11 +23,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@ComponentScan("ru.yandex.practicum.filmorate")
 @WebMvcTest(controllers = FilmController.class)
 class FilmControllerTest {
     private Film film;
-    private static Gson gson;
     private static final String URL = "http://localhost:8080/films";
+
+    private static Gson gson;
 
     @Autowired
     private MockMvc mockMvc;
@@ -37,7 +42,7 @@ class FilmControllerTest {
     }
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         film = Film.builder()
                 .name("District 9")
                 .description("My favorite movie")
@@ -139,9 +144,9 @@ class FilmControllerTest {
                 .build();
 
         mockMvc.perform(post(URL)
-                .contentType("application/json")
-                .content(gson.toJson(film)))
-                .andExpect(status().isBadRequest());
+            .contentType("application/json")
+            .content(gson.toJson(film)))
+            .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -183,7 +188,7 @@ class FilmControllerTest {
     @Test
     void shouldUpdatedFilms() throws Exception {
         film = film.toBuilder()
-                .id(film.getId() + 1)
+                .id(film.getId())
                 .name("updated name")
                 .description("updated desc")
                 .releaseDate(LocalDate.parse("2001-11-11", DateTimeFormatter.ISO_DATE))
@@ -193,11 +198,11 @@ class FilmControllerTest {
         MvcResult mvcResult = mockMvc.perform(post(URL)
                 .contentType("application/json")
                 .content(gson.toJson(film)))
-                .andExpect(status().isOk())
                 .andReturn();
 
         int actualStatusCode = mvcResult.getResponse().getStatus();
-        Film actualFilm = gson.fromJson(mvcResult.getResponse().getContentAsString(), Film.class);
+        String actualBody = mvcResult.getResponse().getContentAsString();
+        Film actualFilm = gson.fromJson(actualBody, Film.class);
 
         assertEquals(200, actualStatusCode);
         assertEquals(film.getName(), actualFilm.getName());

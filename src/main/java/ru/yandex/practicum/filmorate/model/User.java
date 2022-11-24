@@ -1,12 +1,12 @@
 package ru.yandex.practicum.filmorate.model;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
 
-@Data
+@ToString
+@EqualsAndHashCode
 @Builder(toBuilder = true)
 public class User {
 
@@ -24,4 +24,32 @@ public class User {
 
     @PastOrPresent(message = "Дата рождения не может быть в будущем")
     private LocalDate birthday;
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getLogin() {
+        return login;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public LocalDate getBirthday() {
+        return birthday;
+    }
 }
