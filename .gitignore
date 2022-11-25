@@ -44,3 +44,11 @@ build/
 
 *.db
 db/*
+
+### macOS template ###
+.DS_Store
+.AppleDouble
+.LSOverride
+
+### Other
+**/filmorate/Test.java
