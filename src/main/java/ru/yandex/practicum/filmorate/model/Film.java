@@ -45,10 +45,6 @@ public class Film {
         return releaseDate;
     }
 
-    public void setReleaseDate(LocalDate releaseDate) {
-        this.releaseDate = releaseDate;
-    }
-
     public int getDuration() {
         return duration;
     }
