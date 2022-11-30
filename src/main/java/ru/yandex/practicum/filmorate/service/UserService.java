@@ -19,8 +19,17 @@ public class UserService {
         this.userStorage = userStorage;
     }
 
-    public Collection<User> getAll() {
+    public Collection<User> getAllUsers() {
         return userStorage.getUsers().values();
+    }
+
+    public User getUserById(int id) {
+        User user = userStorage.getUsers().get(id);
+        if (user == null) {
+            log.error("Пользователь с id = " + id + " не найден");
+            throw new NotFoundException("Пользователь с id = " + id + " не найден");
+        }
+        return user;
     }
 
     public User createUser(User user) {

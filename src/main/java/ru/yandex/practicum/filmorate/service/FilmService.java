@@ -23,8 +23,17 @@ public class FilmService {
         this.filmStorage = filmStorage;
     }
 
-    public Collection<Film> getAll() {
+    public Collection<Film> getAllFilms() {
         return filmStorage.getFilms().values();
+    }
+
+    public Film getFilmById(int id) {
+        Film film = filmStorage.getFilms().get(id);
+        if (film == null) {
+            log.error("Фильм с id = " + id + " не найден");
+            throw new NotFoundException("Фильм с id = " + id + " не найден");
+        }
+        return film;
     }
 
     public Film createFilm(Film film) {

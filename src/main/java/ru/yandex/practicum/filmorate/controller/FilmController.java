@@ -19,8 +19,13 @@ public class FilmController {
     }
 
     @GetMapping
-    public Collection<Film> getAll() {
-        return filmService.getAll();
+    public Collection<Film> findAll() {
+        return filmService.getAllFilms();
+    }
+
+    @GetMapping("/{id}")
+    public Film findById(@PathVariable int id) {
+        return filmService.getFilmById(id);
     }
 
     @PostMapping

@@ -19,8 +19,13 @@ public class UserController {
     }
 
     @GetMapping
-    public Collection<User> getAll() {
-        return userService.getAll();
+    public Collection<User> findAll() {
+        return userService.getAllUsers();
+    }
+
+    @GetMapping("/{id}")
+    public User findById(@PathVariable int id) {
+        return userService.getUserById(id);
     }
 
     @PostMapping
