@@ -37,11 +37,6 @@ public class InMemoryFilmStorage implements FilmStorage {
     // Ниже начинается новая функциональность которую нужно добавить
     // TODO: начать добавлять новую функциональность
     @Override
-    public void deleteFilm(int filmId) {
-
-    }
-
-    @Override
     public void addLike(int filmId, int userId) {
 
     }

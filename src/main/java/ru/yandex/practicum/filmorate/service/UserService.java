@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
+import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
@@ -20,16 +21,12 @@ public class UserService {
     }
 
     public Collection<User> getAllUsers() {
+        log.info("Запрошен список пользователей");
         return userStorage.getUsers().values();
     }
 
     public User getUserById(int id) {
-        User user = userStorage.getUsers().get(id);
-        if (user == null) {
-            log.error("Пользователь с id = " + id + " не найден");
-            throw new NotFoundException("Пользователь с id = " + id + " не найден");
-        }
-        return user;
+        return userStorage.getUserById(id);
     }
 
     public User createUser(User user) {
@@ -60,5 +57,23 @@ public class UserService {
             log.error("Пользователь с id = " + id + " не найден");
             throw new NotFoundException("Пользователь с id = " + id + " не найден");
         }
+    }
+
+    public User addFriend(int userId, int friendId) {
+        if (userId == friendId) {
+            log.error("Попытка добавления самого себя в друзья пользователя с id = " + userId);
+            throw new ValidationException("Нельзя добавить самого себя в друзья");
+        }
+        log.info("Пользователь с id = " + userId + " добавил в друзья пользователя с id = " + friendId);
+        return userStorage.addFriend(userId, friendId);
+    }
+
+    public User deleteFriend(int userId, int friendId) {
+        if (userId == friendId) {
+            log.error("Попытка удаления самого себя из друзей");
+            throw new ValidationException("Нельзя удалить самого себя из друзей");
+        }
+        log.info("Пользователь с id = " + userId + " удалил из друзей пользователя с id = " + friendId);
+        return userStorage.deleteFriend(userId, friendId);
     }
 }
