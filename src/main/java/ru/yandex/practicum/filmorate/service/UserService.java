@@ -9,6 +9,7 @@ import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.Collection;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -25,8 +26,9 @@ public class UserService {
         return userStorage.getUsers().values();
     }
 
-    public User getUserById(int id) {
-        return userStorage.getUserById(id);
+    public User getUserById(int userId) {
+        log.info("Запрошен пользователь с id = " + userId);
+        return userStorage.getUserById(userId);
     }
 
     public User createUser(User user) {
@@ -64,16 +66,22 @@ public class UserService {
             log.error("Попытка добавления самого себя в друзья пользователя с id = " + userId);
             throw new ValidationException("Нельзя добавить самого себя в друзья");
         }
-        log.info("Пользователь с id = " + userId + " добавил в друзья пользователя с id = " + friendId);
         return userStorage.addFriend(userId, friendId);
     }
 
     public User deleteFriend(int userId, int friendId) {
         if (userId == friendId) {
-            log.error("Попытка удаления самого себя из друзей");
+            log.error("Попытка удаления самого себя из друзей пользователя с id = " + userId);
             throw new ValidationException("Нельзя удалить самого себя из друзей");
         }
-        log.info("Пользователь с id = " + userId + " удалил из друзей пользователя с id = " + friendId);
         return userStorage.deleteFriend(userId, friendId);
+    }
+
+    public List<User> getFriends(int userId) {
+        return userStorage.getFriends(userId);
+    }
+
+    public List<User> getCommonFriends(int userId, int otherId) {
+        return userStorage.getCommonFriends(userId, otherId);
     }
 }

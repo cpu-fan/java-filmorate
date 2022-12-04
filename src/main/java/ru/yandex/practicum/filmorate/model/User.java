@@ -1,7 +1,6 @@
 package ru.yandex.practicum.filmorate.model;
 
 import lombok.*;
-import org.springframework.context.annotation.Bean;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
@@ -59,6 +58,9 @@ public class User {
     }
 
     public Set<Integer> getFriends() {
+        if (friends == null) {
+            setFriends();
+        }
         return friends;
     }
 
