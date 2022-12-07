@@ -63,16 +63,16 @@ public class UserService {
 
     public User addFriend(int userId, int friendId) {
         if (userId == friendId) {
-            log.error("Попытка добавления самого себя в друзья пользователя с id = " + userId);
-            throw new ValidationException("Нельзя добавить самого себя в друзья");
+            log.error("Переданы одинаковые userId и friendId");
+            throw new ValidationException("Переданы одинаковые userId и friendId");
         }
         return userStorage.addFriend(userId, friendId);
     }
 
     public User deleteFriend(int userId, int friendId) {
         if (userId == friendId) {
-            log.error("Попытка удаления самого себя из друзей пользователя с id = " + userId);
-            throw new ValidationException("Нельзя удалить самого себя из друзей");
+            log.error("Переданы одинаковые userId и friendId");
+            throw new ValidationException("Переданы одинаковые userId и friendId");
         }
         return userStorage.deleteFriend(userId, friendId);
     }

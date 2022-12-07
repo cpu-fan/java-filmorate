@@ -6,6 +6,8 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.Size;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @ToString
 @EqualsAndHashCode
@@ -24,6 +26,8 @@ public class Film {
 
     @Positive(message = "Продолжительность фильма должна быть положительной")
     private int duration;
+
+    private Set<Integer> likes;
 
     public int getId() {
         return id;
@@ -47,5 +51,16 @@ public class Film {
 
     public int getDuration() {
         return duration;
+    }
+
+    public Set<Integer> getLikes() {
+        if (likes == null) {
+            setLikes();
+        }
+        return likes;
+    }
+
+    public void setLikes() {
+        this.likes = new HashSet<>();
     }
 }
