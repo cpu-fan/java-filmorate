@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.controller;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -86,6 +87,18 @@ class UserControllerTest {
         user = gson.fromJson(userStr, User.class);
         friend = gson.fromJson(friendStr, User.class);
         commonFriend = gson.fromJson(commonStr, User.class);
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        mockMvc.perform(delete(URL + "/1/friends/2")
+                .contentType("application/json"));
+        mockMvc.perform(delete(URL + "/1/friends/3")
+                .contentType("application/json"));
+        mockMvc.perform(delete(URL + "/2/friends/1")
+                .contentType("application/json"));
+        mockMvc.perform(delete(URL + "/2/friends/3")
+                .contentType("application/json"));
     }
 
     @Test
@@ -281,6 +294,7 @@ class UserControllerTest {
                 .andReturn()
                 .getResponse()
                 .getContentAsString(), User.class);
+        user.setId(1);
 
         assertEquals(user.getId(), actualFriend.getFriends().toArray()[0]);
     }
@@ -392,6 +406,8 @@ class UserControllerTest {
 
         friend.getFriends().add(1);
         commonFriend.getFriends().add(1);
+        friend.setId(2);
+        commonFriend.setId(3);
         String expectedListFriends = gson.toJson(List.of(friend, commonFriend));
 
         assertEquals(expectedListFriends, actualListFriends);
@@ -418,6 +434,7 @@ class UserControllerTest {
 
         commonFriend.getFriends().add(1);
         commonFriend.getFriends().add(2);
+        commonFriend.setId(3);
         String expectedCommonFriends = gson.toJson(List.of(commonFriend));
 
         assertEquals(expectedCommonFriends, actualCommonFriends);

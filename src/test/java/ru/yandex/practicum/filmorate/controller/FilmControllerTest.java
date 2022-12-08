@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.controller;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,7 +17,6 @@ import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -75,6 +75,14 @@ class FilmControllerTest {
 
         film = gson.fromJson(filmStr, Film.class);
         user = gson.fromJson(userStr, User.class);
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        film.getLikes().clear();
+        mockMvc.perform(put(URL)
+                .contentType("application/json")
+                .content(gson.toJson(film)));
     }
 
     @Test
@@ -251,7 +259,7 @@ class FilmControllerTest {
                 .andReturn()
                 .getResponse()
                 .getContentAsString(), Film.class);
-
+        film.setId(1);
         assertEquals(film, actualFilm);
     }
 
@@ -354,14 +362,15 @@ class FilmControllerTest {
         newFilm.getLikes().add(1);
 
         // получаем популярные фильмы
-        String actualPopularFilms = mockMvc.perform(get(URL + "/popular")
+        Film[] actualPopularFilms = gson.fromJson(mockMvc.perform(get(URL + "/popular")
                 .contentType("application/json"))
                 .andReturn()
                 .getResponse()
-                .getContentAsString();
-        String expectedPopularFilms = gson.toJson(List.of(newFilm, film));
+                .getContentAsString(), Film[].class);
+        Film[] expectedPopularFilms = {newFilm, film};
 
-        assertEquals(expectedPopularFilms, actualPopularFilms);
+        assertEquals(expectedPopularFilms[0].getId(), actualPopularFilms[0].getId());
+        assertEquals(expectedPopularFilms[1].getId(), actualPopularFilms[1].getId());
     }
 
     @Test
