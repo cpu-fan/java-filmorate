@@ -7,27 +7,28 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import ru.yandex.practicum.filmorate.controller.utils.testadapters.LocalDateAdapter;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ComponentScan("ru.yandex.practicum.filmorate")
 @WebMvcTest(controllers = FilmController.class)
 class FilmControllerTest {
     private Film film;
+    private User user;
     private static final String URL = "http://localhost:8080/films";
+    private static final String URL_USER = "http://localhost:8080/users";
 
     private static Gson gson;
 
@@ -49,6 +50,31 @@ class FilmControllerTest {
                 .releaseDate(LocalDate.parse("2009-08-13", DateTimeFormatter.ISO_DATE))
                 .duration(112)
                 .build();
+
+        user = User.builder()
+                .login("Shrimp")
+                .name("Wikus Van De Merwe")
+                .email("wikusvandemerwe@mcu.com")
+                .birthday(LocalDate.parse("1973-11-27", DateTimeFormatter.ISO_DATE))
+                .build();
+
+        String filmStr = mockMvc.perform(post(URL)
+                .contentType("application/json")
+                .content(gson.toJson(film)))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String userStr = mockMvc.perform(post(URL_USER)
+                .contentType("application/json")
+                .content(gson.toJson(user)))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        film = gson.fromJson(filmStr, Film.class);
+        user = gson.fromJson(userStr, User.class);
     }
 
     @Test
@@ -216,5 +242,139 @@ class FilmControllerTest {
         mockMvc.perform(get(URL)
                 .contentType("application/json"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldGetFilmById() throws Exception {
+        Film actualFilm = gson.fromJson(mockMvc.perform(get(URL + "/1")
+                .contentType("application/json"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString(), Film.class);
+
+        assertEquals(film, actualFilm);
+    }
+
+    @Test
+    void shouldGet400WhenFilmByIdNotFound() throws Exception {
+        mockMvc.perform(get(URL + "/-1")
+                .contentType("application/json"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldAddLike() throws Exception {
+        Film actualFilm = gson.fromJson(mockMvc.perform(put(URL + "/1/like/1")
+                .contentType("application/json"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString(), Film.class);
+        film.getLikes().add(1);
+
+        assertEquals(film.getLikes().toArray()[0], actualFilm.getLikes().toArray()[0]);
+    }
+
+    @Test
+    void shouldGet404WhenAddLikeAndFilmNotFound() throws Exception {
+        mockMvc.perform(put(URL + "/-1/like/1")
+                .contentType("application/json"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldGet404WhenAddLikeAndUserNotFound() throws Exception {
+        mockMvc.perform(put(URL + "/1/like/-1")
+                .contentType("application/json"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldDeleteLike() throws Exception {
+        mockMvc.perform(put(URL + "/1/like/1")
+                .contentType("application/json"))
+                .andExpect(status().isOk());
+        Film actualFilm = gson.fromJson(mockMvc.perform(delete(URL + "/1/like/1")
+                .contentType("application/json"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString(), Film.class);
+
+        assertEquals(film.getLikes().isEmpty(), actualFilm.getLikes().isEmpty());
+    }
+
+    @Test
+    void shouldGet404WhenDeleteLikeAndFilmNotFound() throws Exception {
+        mockMvc.perform(delete(URL + "/-1/like/1")
+                .contentType("application/json"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldGet404WhenDeleteLikeAndUserNotFound() throws Exception {
+        mockMvc.perform(delete(URL + "/1/like/-1")
+                .contentType("application/json"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldGetPopularFilms() throws Exception {
+        // создаем еще один фильм
+        Film newFilm = Film.builder()
+                .name("Inception")
+                .description("One of my favorite films.")
+                .releaseDate(LocalDate.parse("2010-07-22", DateTimeFormatter.ISO_DATE))
+                .duration(148)
+                .build();
+        // создаем второго юзера
+        User newUser = User.builder()
+                .login("Top")
+                .name("Cobb")
+                .email("cobb@good-dreams.com")
+                .birthday(LocalDate.parse("1974-11-11", DateTimeFormatter.ISO_DATE))
+                .build();
+        // отправляем их в апи
+        mockMvc.perform(post(URL)
+                .contentType("application/json")
+                .content(gson.toJson(newFilm)));
+        mockMvc.perform(post(URL_USER)
+                .contentType("application/json")
+                .content(gson.toJson(newUser)));
+        // ставим лайки
+        mockMvc.perform(put(URL + "/1/like/1")
+                .contentType("application/json"));
+        mockMvc.perform(put(URL + "/2/like/2")
+                .contentType("application/json"));
+        mockMvc.perform(put(URL + "/2/like/1")
+                .contentType("application/json"));
+
+        film.setId(1);
+        newFilm.setId(2);
+        film.getLikes().add(1);
+        newFilm.getLikes().add(2);
+        newFilm.getLikes().add(1);
+
+        // получаем популярные фильмы
+        String actualPopularFilms = mockMvc.perform(get(URL + "/popular")
+                .contentType("application/json"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        String expectedPopularFilms = gson.toJson(List.of(newFilm, film));
+
+        assertEquals(expectedPopularFilms, actualPopularFilms);
+    }
+
+    @Test
+    void shouldGet400WhenPopularFilmsCountIs0() throws Exception {
+        mockMvc.perform(get(URL + "/popular?count=0")
+                .contentType("application/json"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldGet400WhenPopularFilmsCountIsNegative() throws Exception {
+        mockMvc.perform(get(URL + "/popular?count=-1")
+                .contentType("application/json"))
+                .andExpect(status().isBadRequest());
     }
 }

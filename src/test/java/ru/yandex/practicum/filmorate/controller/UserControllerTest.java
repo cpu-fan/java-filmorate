@@ -244,7 +244,7 @@ class UserControllerTest {
     }
 
     @Test
-    void shouldGet200WhenSendUserId1() throws Exception {
+    void shouldGetUserById() throws Exception {
         MvcResult mvcResult = mockMvc.perform(get(URL + "/1")
                 .contentType("application/json"))
                 .andExpect(status().isOk())
@@ -255,7 +255,7 @@ class UserControllerTest {
     }
 
     @Test
-    void shouldGet400WhenSendUserIdMinus1() throws Exception {
+    void shouldGet400WhenGetUserByIdNotFound() throws Exception {
         mockMvc.perform(get(URL + "/-1")
                 .contentType("application/json"))
                 .andExpect(status().isNotFound());
