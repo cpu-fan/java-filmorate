@@ -64,7 +64,15 @@ public class User {
         return friends;
     }
 
-    public void setFriends() {
+    private void setFriends() {
         this.friends = new HashSet<>();
+    }
+
+    public void addFriend(int friendId) {
+        friends.add(friendId);
+    }
+
+    public void removeFriend(int friendId) {
+        friends.remove(friendId);
     }
 }

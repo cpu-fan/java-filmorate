@@ -3,7 +3,6 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
@@ -27,7 +26,7 @@ public class FilmService {
     }
 
     public Collection<Film> getAllFilms() {
-        return filmStorage.getFilms().values();
+        return filmStorage.getFilms();
     }
 
     public Film getFilmById(int id) {
@@ -58,27 +57,12 @@ public class FilmService {
 
     private void checkAndUpdateFilm(Film film) {
         int id = film.getId();
-        if (filmStorage.getFilms().containsKey(id)) {
+        if (filmStorage.getFilmById(id) != null) {
             filmStorage.updateFilm(id, film);
-        } else {
-            log.error("Фильм с id = " + id + " не найден");
-            throw new NotFoundException("Фильм с id = " + id + " не найден");
         }
     }
 
     public Film addLike(int filmId, int userId) {
-        // Здесь и в методе deleteLike() изначально я сделал такую проверку, что если приходит недопустимый id, то
-        // выбрасываю ошибку валидации.
-//        if (userId <= 0) {
-//            log.error("Недопустимое значение id пользователя: " + userId);
-//            throw new ValidationException("Недопустимое значение id пользователя: " + userId);
-//        }
-        // Но потом, я в тестах увидел, что в запросе удаления лайка с некорректным userId ожидается 404, а не 400.
-        // Получается, что FilmServices должен быть связан с UserServices? Через внедрение? В ТЗ об этом вроде не
-        // говорили и не намекали, поэтому я подумал, что будет достаточно сделать проверку на корректность id.
-        // Но все же в итоге внедрил UserService сюда, и для проверки есть ли такой юзер (userId) просто вызываю метод
-        // getUserById(userId), в котором уже имеется проверка на существование юзера.
-        // Не знаю конечно насколько это правильно. :)
         userService.getUserById(userId);
         return filmStorage.addLike(filmId, userId);
     }

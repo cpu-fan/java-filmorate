@@ -3,8 +3,6 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
-import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
@@ -23,7 +21,7 @@ public class UserService {
 
     public Collection<User> getAllUsers() {
         log.info("Запрошен список пользователей");
-        return userStorage.getUsers().values();
+        return userStorage.getUsers();
     }
 
     public User getUserById(int userId) {
@@ -53,27 +51,16 @@ public class UserService {
 
     private void checkAndUpdateUser(User user) {
         int id = user.getId();
-        if (userStorage.getUsers().containsKey(id)) {
+        if (userStorage.getUserById(id) != null) {
             userStorage.updateUser(id, user);
-        } else {
-            log.error("Пользователь с id = " + id + " не найден");
-            throw new NotFoundException("Пользователь с id = " + id + " не найден");
         }
     }
 
     public User addFriend(int userId, int friendId) {
-        if (userId == friendId) {
-            log.error("Переданы одинаковые userId и friendId");
-            throw new ValidationException("Переданы одинаковые userId и friendId");
-        }
         return userStorage.addFriend(userId, friendId);
     }
 
     public User deleteFriend(int userId, int friendId) {
-        if (userId == friendId) {
-            log.error("Переданы одинаковые userId и friendId");
-            throw new ValidationException("Переданы одинаковые userId и friendId");
-        }
         return userStorage.deleteFriend(userId, friendId);
     }
 

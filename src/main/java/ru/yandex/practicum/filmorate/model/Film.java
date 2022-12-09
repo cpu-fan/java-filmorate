@@ -60,7 +60,15 @@ public class Film {
         return likes;
     }
 
-    public void setLikes() {
+    private void setLikes() {
         this.likes = new HashSet<>();
+    }
+
+    public void addLike(int userId) {
+        likes.add(userId);
+    }
+
+    public void removeLike(int userId) {
+        likes.remove(userId);
     }
 }

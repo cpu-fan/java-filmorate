@@ -22,8 +22,8 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public Map<Integer, User> getUsers() {
-        return users;
+    public Collection<User> getUsers() {
+        return users.values();
     }
 
     @Override
@@ -52,12 +52,16 @@ public class InMemoryUserStorage implements UserStorage {
     public User addFriend(int userId, int friendId) {
         User user = getUserById(userId);
         User friend = getUserById(friendId);
+        if (userId == friendId) {
+            log.error("Переданы одинаковые userId и friendId");
+            throw new ValidationException("Переданы одинаковые userId и friendId");
+        }
         if (user.getFriends().contains(friendId)) {
             log.error("Попытка повторного добавления пользователя с id = " + friendId + " пользователем id = " + userId);
             throw new ValidationException("Пользователь с id = " + friendId + " уже имеется в друзьях");
         }
-        user.getFriends().add(friendId);
-        friend.getFriends().add(userId);
+        user.addFriend(friendId);
+        friend.addFriend(userId);
         log.info("Пользователь с id = " + userId + " добавил в друзья пользователя с id = " + friendId);
         return user;
     }
@@ -66,12 +70,16 @@ public class InMemoryUserStorage implements UserStorage {
     public User deleteFriend(int userId, int friendId) {
         User user = getUserById(userId);
         User friend = getUserById(friendId);
+        if (userId == friendId) {
+            log.error("Переданы одинаковые userId и friendId");
+            throw new ValidationException("Переданы одинаковые userId и friendId");
+        }
         if (!user.getFriends().contains(friendId)) {
             log.error("Пользователя с id = " + friendId + " нет в списке друзей пользователя id = " + userId);
             throw new NotFoundException("Пользователя с id = " + friendId + " нет в списке ваших друзей");
         }
-        user.getFriends().remove(friendId);
-        friend.getFriends().remove(userId);
+        user.removeFriend(friendId);
+        friend.removeFriend(userId);
         log.info("Пользователь с id = " + userId + " удалил из друзей пользователя с id = " + friendId);
         return user;
     }
@@ -87,9 +95,9 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public List<User> getCommonFriends(int userId, int otherId) {
         User user = getUserById(userId);
-        User otherUser = getUserById(otherId);
+        Set<Integer> otherUserFriends = getUserById(otherId).getFriends();
         return Stream.of(user.getFriends().toArray())
-                .filter(id -> Arrays.asList(otherUser.getFriends().toArray()).contains(id))
+                .filter(id -> Arrays.asList(otherUserFriends.toArray()).contains(id))
                 .map(users::get)
                 .collect(Collectors.toList());
     }
