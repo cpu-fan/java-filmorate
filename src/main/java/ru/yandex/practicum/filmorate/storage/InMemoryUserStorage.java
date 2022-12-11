@@ -8,7 +8,6 @@ import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Component
 @Slf4j
@@ -87,7 +86,7 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public List<User> getFriends(int userId) {
         User user = getUserById(userId);
-        return Stream.of(user.getFriends().toArray())
+        return user.getFriends().stream()
                 .map(users::get)
                 .collect(Collectors.toList());
     }
@@ -96,8 +95,8 @@ public class InMemoryUserStorage implements UserStorage {
     public List<User> getCommonFriends(int userId, int otherId) {
         User user = getUserById(userId);
         Set<Integer> otherUserFriends = getUserById(otherId).getFriends();
-        return Stream.of(user.getFriends().toArray())
-                .filter(id -> Arrays.asList(otherUserFriends.toArray()).contains(id))
+        return user.getFriends().stream()
+                .filter(otherUserFriends::contains)
                 .map(users::get)
                 .collect(Collectors.toList());
     }

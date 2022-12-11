@@ -51,9 +51,8 @@ public class UserService {
 
     private void checkAndUpdateUser(User user) {
         int id = user.getId();
-        if (userStorage.getUserById(id) != null) {
-            userStorage.updateUser(id, user);
-        }
+        userStorage.getUserById(id);
+        userStorage.updateUser(id, user);
     }
 
     public User addFriend(int userId, int friendId) {

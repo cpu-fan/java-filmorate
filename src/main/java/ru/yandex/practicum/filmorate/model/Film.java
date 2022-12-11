@@ -12,6 +12,8 @@ import java.util.Set;
 @ToString
 @EqualsAndHashCode
 @Builder(toBuilder = true)
+@Getter
+@Setter
 public class Film {
 
     private int id;
@@ -28,30 +30,6 @@ public class Film {
     private int duration;
 
     private Set<Integer> likes;
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public LocalDate getReleaseDate() {
-        return releaseDate;
-    }
-
-    public int getDuration() {
-        return duration;
-    }
 
     public Set<Integer> getLikes() {
         if (likes == null) {

@@ -10,6 +10,8 @@ import java.util.Set;
 @ToString
 @EqualsAndHashCode
 @Builder(toBuilder = true)
+@Getter
+@Setter
 public class User {
 
     private int id;
@@ -28,34 +30,6 @@ public class User {
     private LocalDate birthday;
 
     private Set<Integer> friends;
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getLogin() {
-        return login;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public LocalDate getBirthday() {
-        return birthday;
-    }
 
     public Set<Integer> getFriends() {
         if (friends == null) {

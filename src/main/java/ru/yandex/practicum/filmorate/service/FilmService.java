@@ -57,9 +57,8 @@ public class FilmService {
 
     private void checkAndUpdateFilm(Film film) {
         int id = film.getId();
-        if (filmStorage.getFilmById(id) != null) {
-            filmStorage.updateFilm(id, film);
-        }
+        filmStorage.getFilmById(id);
+        filmStorage.updateFilm(id, film);
     }
 
     public Film addLike(int filmId, int userId) {
