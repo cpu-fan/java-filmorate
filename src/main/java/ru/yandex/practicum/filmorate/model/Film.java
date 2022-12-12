@@ -6,10 +6,14 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.Size;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @ToString
 @EqualsAndHashCode
 @Builder(toBuilder = true)
+@Getter
+@Setter
 public class Film {
 
     private int id;
@@ -25,31 +29,24 @@ public class Film {
     @Positive(message = "Продолжительность фильма должна быть положительной")
     private int duration;
 
-    public int getId() {
-        return id;
+    private Set<Integer> likes;
+
+    public Set<Integer> getLikes() {
+        if (likes == null) {
+            setLikes();
+        }
+        return likes;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    private void setLikes() {
+        this.likes = new HashSet<>();
     }
 
-    public String getName() {
-        return name;
+    public void addLike(int userId) {
+        likes.add(userId);
     }
 
-    public String getDescription() {
-        return description;
-    }
-
-    public LocalDate getReleaseDate() {
-        return releaseDate;
-    }
-
-    public void setReleaseDate(LocalDate releaseDate) {
-        this.releaseDate = releaseDate;
-    }
-
-    public int getDuration() {
-        return duration;
+    public void removeLike(int userId) {
+        likes.remove(userId);
     }
 }

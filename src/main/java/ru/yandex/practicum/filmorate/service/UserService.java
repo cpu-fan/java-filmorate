@@ -1,32 +1,37 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.UserStorage;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @Slf4j
 public class UserService {
-    private int id;
-    private Map<Integer, User> users = new HashMap<>();
+    private final UserStorage userStorage;
 
-    public List<User> getAll() {
-        return new ArrayList<>(users.values());
+    @Autowired
+    public UserService(UserStorage userStorage) {
+        this.userStorage = userStorage;
+    }
+
+    public Collection<User> getAllUsers() {
+        log.info("Запрошен список пользователей");
+        return userStorage.getUsers();
+    }
+
+    public User getUserById(int userId) {
+        log.info("Запрошен пользователь с id = " + userId);
+        return userStorage.getUserById(userId);
     }
 
     public User createUser(User user) {
         checkAndSetName(user);
-        int id = generateId();
-        user.setId(id);
-        users.put(id, user);
+        user = userStorage.addUser(user);
         log.info("Добавлен новый пользователь: " + user);
         return user;
     }
@@ -46,15 +51,23 @@ public class UserService {
 
     private void checkAndUpdateUser(User user) {
         int id = user.getId();
-        if (users.containsKey(id)) {
-            users.put(id, user);
-        } else {
-            log.error("Пользователя с id = " + id + " не найден");
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
+        userStorage.getUserById(id);
+        userStorage.updateUser(id, user);
     }
 
-    private int generateId() {
-        return ++id;
+    public User addFriend(int userId, int friendId) {
+        return userStorage.addFriend(userId, friendId);
+    }
+
+    public User deleteFriend(int userId, int friendId) {
+        return userStorage.deleteFriend(userId, friendId);
+    }
+
+    public List<User> getFriends(int userId) {
+        return userStorage.getFriends(userId);
+    }
+
+    public List<User> getCommonFriends(int userId, int otherId) {
+        return userStorage.getCommonFriends(userId, otherId);
     }
 }

@@ -4,10 +4,14 @@ import lombok.*;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @ToString
 @EqualsAndHashCode
 @Builder(toBuilder = true)
+@Getter
+@Setter
 public class User {
 
     private int id;
@@ -25,31 +29,24 @@ public class User {
     @PastOrPresent(message = "Дата рождения не может быть в будущем")
     private LocalDate birthday;
 
-    public int getId() {
-        return id;
+    private Set<Integer> friends;
+
+    public Set<Integer> getFriends() {
+        if (friends == null) {
+            setFriends();
+        }
+        return friends;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    private void setFriends() {
+        this.friends = new HashSet<>();
     }
 
-    public String getLogin() {
-        return login;
+    public void addFriend(int friendId) {
+        friends.add(friendId);
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public LocalDate getBirthday() {
-        return birthday;
+    public void removeFriend(int friendId) {
+        friends.remove(friendId);
     }
 }
