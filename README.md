@@ -1,2 +1,5 @@
-# java-filmorate
-Template repository for Filmorate project.
+# Filmorate
+Бэкенд для сервиса, который работает с фильмами и оценками пользователей, а также возвращает топ-фильмов, рекомендованных к просмотру. Теперь ни вам, ни вашим друзьям не придётся долго размышлять, что посмотреть вечером.
+
+Схема БД:
+<img src="src/main/resources/filmorate-db-schema.png" alt="filmorate-db-schema.png" width="500"/>
