@@ -12,9 +12,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class InMemoryFilmStorage implements FilmStorage {
     private int id;
-    private Map<Integer, Film> films = new HashMap<>();
+    private final Map<Integer, Film> films = new HashMap<>();
 
-    @Override
     public int generateFilmId() {
         return ++id;
     }

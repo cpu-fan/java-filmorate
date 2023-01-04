@@ -1,11 +1,11 @@
-insert into MPA_RATING (NAME)
+insert into MPA_RATINGS (NAME)
 values ('G'),
        ('PG'),
        ('PG-13'),
        ('R'),
        ('NC-17');
 
-insert into GENRE (NAME)
+insert into GENRES (NAME)
 values ('Comedy'),
        ('Drama'),
        ('Cartoon'),
@@ -22,12 +22,12 @@ values ('Inception', 'A thief who steals corporate secrets through the use of dr
        ('District 9', 'Violence ensues after an extraterrestrial race forced to live in slum-like conditions on Earth finds a kindred spirit in a government agent exposed to their biotechnology.', '2009-08-13', 112, 3);
 
 insert into FILM_GENRES
-values (1, 6),
-       (1, 7),
+values (1, 7),
        (1, 8),
+       (1, 9),
        (2, 8),
        (2, 7),
-       (2, 6),
+       (2, 9),
        (3, 6),
        (3, 4),
        (3, 9);

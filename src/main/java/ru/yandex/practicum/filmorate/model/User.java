@@ -33,13 +33,9 @@ public class User {
 
     public Set<Integer> getFriends() {
         if (friends == null) {
-            setFriends();
+            this.friends = new HashSet<>();
         }
         return friends;
-    }
-
-    private void setFriends() {
-        this.friends = new HashSet<>();
     }
 
     public void addFriend(int friendId) {

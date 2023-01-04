@@ -9,13 +9,12 @@ import ru.yandex.practicum.filmorate.model.User;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Component
+@Component("userInMemoryImpl")
 @Slf4j
 public class InMemoryUserStorage implements UserStorage {
     private int id;
-    private Map<Integer, User> users = new HashMap<>();
+    private final Map<Integer, User> users = new HashMap<>();
 
-    @Override
     public int generateUserId() {
         return ++id;
     }

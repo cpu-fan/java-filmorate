@@ -6,7 +6,9 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.Size;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 @ToString
@@ -31,15 +33,16 @@ public class Film {
 
     private Set<Integer> likes;
 
+    private Set<Genre> genres;
+
+    private MpaRating mpa;
+
+
     public Set<Integer> getLikes() {
         if (likes == null) {
-            setLikes();
+            this.likes = new HashSet<>();
         }
         return likes;
-    }
-
-    private void setLikes() {
-        this.likes = new HashSet<>();
     }
 
     public void addLike(int userId) {
@@ -48,5 +51,22 @@ public class Film {
 
     public void removeLike(int userId) {
         likes.remove(userId);
+    }
+
+    public Set<Genre> getGenres() {
+        if (genres == null) {
+            this.genres = new HashSet<>();
+        }
+        return genres;
+    }
+
+    public Map<String, Object> toMap() {
+        Map<String, Object> values = new HashMap<>();
+        values.put("name", name);
+        values.put("description", description);
+        values.put("release_date", releaseDate);
+        values.put("duration", duration);
+        values.put("mpa_rating_id", mpa.getId());
+        return values;
     }
 }
