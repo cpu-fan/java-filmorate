@@ -21,7 +21,7 @@ public class FilmService {
     private final UserService userService;
 
     @Autowired
-    public FilmService(@Qualifier("filmDaoImpl") FilmStorage filmStorage, UserService userService) {
+    public FilmService(@Qualifier("filmDbStorageDaoImpl") FilmStorage filmStorage, UserService userService) {
         this.filmStorage = filmStorage;
         this.userService = userService;
     }
@@ -43,9 +43,8 @@ public class FilmService {
 
     public Film updateFilm(Film film) {
         releaseCheck(film);
-        checkAndUpdateFilm(film);
         log.info("Внесены обновления в информацию для фильма id = " + film.getId());
-        return film;
+        return filmStorage.updateFilm(film);
     }
 
     private void releaseCheck(Film film) {
@@ -53,12 +52,6 @@ public class FilmService {
             log.error("У фильма " + film + " дата релиза раньше возможной даты " + MIN_DATE_RELEASE);
             throw new ValidationException("Дата релиза фильма не может быть раньше чем 28 декабря 1895");
         }
-    }
-
-    private void checkAndUpdateFilm(Film film) {
-        int id = film.getId();
-        filmStorage.getFilmById(id);
-        filmStorage.updateFilm(id, film);
     }
 
     public Film addLike(int filmId, int userId) {

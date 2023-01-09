@@ -8,7 +8,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Component
+@Component("filmInMemoryImpl")
 @Slf4j
 public class InMemoryFilmStorage implements FilmStorage {
     private int id;
@@ -31,8 +31,10 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public void updateFilm(int id, Film film) {
-        films.put(id, film);
+    public Film updateFilm(Film film) {
+        getFilmById(film.getId());
+        films.put(film.getId(), film);
+        return film;
     }
 
     @Override

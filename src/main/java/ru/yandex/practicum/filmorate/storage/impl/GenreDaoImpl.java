@@ -10,6 +10,7 @@ import ru.yandex.practicum.filmorate.storage.dao.GenreDao;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -40,9 +41,10 @@ public class GenreDaoImpl implements GenreDao {
     }
 
     @Override
-    public List<Genre> getFilmGenres(int filmId) {
+    public Set<Genre> getFilmGenres(int filmId) {
         String sql = "select * from genres where id in (select genre_id from film_genres where film_id = ?)";
-        return jdbcTemplate.query(sql, this::mapRowGenre, filmId);
+        List<Genre> genreList = jdbcTemplate.query(sql, this::mapRowGenre, filmId);
+        return new HashSet<>(genreList);
     }
 
     @Override
@@ -51,6 +53,11 @@ public class GenreDaoImpl implements GenreDao {
         for (Genre filmGenre : filmGenres) {
             jdbcTemplate.update(sql, filmId, filmGenre.getId());
         }
+    }
+
+    public void deleteFilmGenres(int filmId) {
+        String sql = "delete from film_genres where film_id = ?";
+        jdbcTemplate.update(sql, filmId);
     }
 
     private Genre mapRowGenre(ResultSet rs, int rowNum) throws SQLException {

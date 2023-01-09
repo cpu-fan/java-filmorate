@@ -33,10 +33,9 @@ public class Film {
 
     private Set<Integer> likes;
 
-    private Set<Genre> genres;
-
     private MpaRating mpa;
 
+    private Set<Genre> genres;
 
     public Set<Integer> getLikes() {
         if (likes == null) {

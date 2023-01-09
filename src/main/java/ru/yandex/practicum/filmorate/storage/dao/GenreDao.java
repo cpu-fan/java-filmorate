@@ -11,7 +11,7 @@ public interface GenreDao {
 
     Genre getGenreById(int id);
 
-    List<Genre> getFilmGenres(int filmId);
+    Set<Genre> getFilmGenres(int filmId);
 
     void addFilmGenres(int filmId, Set<Genre> filmGenres);
 }
