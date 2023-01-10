@@ -39,9 +39,7 @@ public class UserService {
 
     public User updateUser(User user) {
         checkAndSetName(user);
-        checkAndUpdateUser(user);
-        log.info("Внесены обновления в информацию о пользователе id = " + user.getId());
-        return user;
+        return updateAndGetUser(user);
     }
 
     private void checkAndSetName(User user) {
@@ -50,10 +48,11 @@ public class UserService {
         }
     }
 
-    private void checkAndUpdateUser(User user) {
+    private User updateAndGetUser(User user) {
         int id = user.getId();
         userStorage.getUserById(id);
-        userStorage.updateUser(id, user);
+        log.info("Внесены обновления в информацию о пользователе id = " + id);
+        return userStorage.updateUser(user);
     }
 
     public User addFriend(int userId, int friendId) {

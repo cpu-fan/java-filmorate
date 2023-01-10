@@ -63,16 +63,17 @@ public class FilmDbStorage implements FilmStorage {
     public Film updateFilm(Film film) {
         String sql = "update films set name = ?, description = ?, release_date = ?, duration = ?, mpa_rating_id = ? " +
                 "where id = ?";
+        int filmId = film.getId();
         jdbcTemplate.update(sql,
                 film.getName(),
                 film.getDescription(),
                 film.getReleaseDate(),
                 film.getDuration(),
                 film.getMpa().getId(),
-                film.getId());
+                filmId);
 
         checkAndUpdateGenres(film); // проверяем и обновляем по необходимости список жанров фильма
-        return getFilmWithMpaAndGenreNames(film.getId(), film);
+        return getFilmWithMpaAndGenreNames(filmId, film);
     }
 
     @Override
