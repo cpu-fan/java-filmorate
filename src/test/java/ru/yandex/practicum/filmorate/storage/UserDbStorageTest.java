@@ -90,8 +90,9 @@ class UserDbStorageTest {
 
     @Test
     void addUser() {
-        User user = userDbStorage.addUser(newUser);
-        assertEquals(4, user.getId());
+        User actualUser = userDbStorage.addUser(newUser);
+        newUser.setId(actualUser.getId());
+        assertEquals(newUser, actualUser);
     }
 
     @Test
