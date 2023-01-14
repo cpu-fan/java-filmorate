@@ -16,10 +16,7 @@ import ru.yandex.practicum.filmorate.storage.impl.GenreDaoImpl;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Component("filmDbStorageDaoImpl")
 @Slf4j
@@ -61,9 +58,11 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film updateFilm(Film film) {
+        int filmId = film.getId();
+        getFilmById(filmId);
+
         String sql = "update films set name = ?, description = ?, release_date = ?, duration = ?, mpa_rating_id = ? " +
                 "where id = ?";
-        int filmId = film.getId();
         jdbcTemplate.update(sql,
                 film.getName(),
                 film.getDescription(),
@@ -73,6 +72,7 @@ public class FilmDbStorage implements FilmStorage {
                 filmId);
 
         checkAndUpdateGenres(film); // проверяем и обновляем по необходимости список жанров фильма
+
         return getFilmWithMpaAndGenreNames(filmId, film);
     }
 
@@ -117,7 +117,11 @@ public class FilmDbStorage implements FilmStorage {
     public List<Film> getPopularFilms(int count) {
         String sql = "select * from FILMS where id in (select FILM_ID from FILM_LIKES group by FILM_ID " +
                 "having count(USER_ID) order by count(USER_ID) desc) limit ?";
-        return jdbcTemplate.query(sql, this::mapRowFilm, count);
+        List<Film> popularFilms = jdbcTemplate.query(sql, this::mapRowFilm, count);
+        if (popularFilms.isEmpty()) {
+            return new ArrayList<>(getFilms());
+        }
+        return popularFilms;
     }
 
     private Film mapRowFilm(ResultSet rs, int rowNum) throws SQLException {
