@@ -146,7 +146,6 @@ class FilmDbStorageTest {
 
     @Test
     void getPopularFilms() {
-        addLike();
         List<Film> actualPopularFilms = filmDbStorage.getPopularFilms(1);
         film.setId(1);
 

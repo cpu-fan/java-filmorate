@@ -27,10 +27,12 @@ public class FilmService {
     }
 
     public Collection<Film> getAllFilms() {
+        log.info("Запрошен список фильмов");
         return filmStorage.getFilms();
     }
 
     public Film getFilmById(int id) {
+        log.info("Запрошен фильм id = " + id);
         return filmStorage.getFilmById(id);
     }
 
@@ -42,6 +44,7 @@ public class FilmService {
     }
 
     public Film updateFilm(Film film) {
+        filmStorage.getFilmById(film.getId());
         releaseCheck(film);
         log.info("Внесены обновления в информацию для фильма id = " + film.getId());
         return filmStorage.updateFilm(film);
@@ -55,11 +58,13 @@ public class FilmService {
     }
 
     public Film addLike(int filmId, int userId) {
+        log.info("Добавление лайка фильму id = " + filmId + " пользователем id = " + userId);
         userService.getUserById(userId);
         return filmStorage.addLike(filmId, userId);
     }
 
     public Film deleteLike(int filmId, int userId) {
+        log.info("Удаление лайка у фильма id = " + filmId + " пользователем id = " + userId);
         userService.getUserById(userId);
         return filmStorage.deleteLike(filmId, userId);
     }
@@ -69,6 +74,7 @@ public class FilmService {
             log.error("Недопустимое значение count: " + count);
             throw new ValidationException("Недопустимое значение count: " + count);
         }
+        log.info("Запрошен список топ-" + count + " популярных фильмов");
         return filmStorage.getPopularFilms(count);
     }
 }

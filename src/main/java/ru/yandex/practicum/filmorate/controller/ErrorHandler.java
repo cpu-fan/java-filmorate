@@ -11,7 +11,6 @@ import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.ErrorResponse;
 
-import java.util.Arrays;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice("ru.yandex.practicum.filmorate.controller")
@@ -42,7 +41,7 @@ public class ErrorHandler {
     @ExceptionHandler
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleThrowable(final Throwable e) {
-        e.printStackTrace();
+        log.error("Произошла непредвиденная ошибка: ", e);
         return new ErrorResponse("Произошла непредвиденная ошибка");
     }
 }

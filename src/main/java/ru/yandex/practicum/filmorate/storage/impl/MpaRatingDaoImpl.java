@@ -1,7 +1,6 @@
 package ru.yandex.practicum.filmorate.storage.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
@@ -31,12 +30,12 @@ public class MpaRatingDaoImpl implements MpaRatingDao {
     @Override
     public MpaRating getMpaRatingById(int id) {
         String sql = "select * from mpa_ratings where id = ?";
-        try {
-            return jdbcTemplate.queryForObject(sql, this::mapRowMpaRating, id);
-        } catch (EmptyResultDataAccessException e) {
+        List<MpaRating> mpaRatings = jdbcTemplate.query(sql, this::mapRowMpaRating, id);
+        if (mpaRatings.isEmpty()) {
             log.error(String.format("MPA-рейтинг с id = %d не существует", id));
             throw new NotFoundException(String.format("MPA-рейтинг с id = %d не существует", id));
         }
+        return mpaRatings.get(0);
     }
 
     private MpaRating mapRowMpaRating(ResultSet rs, int rowNum) throws SQLException {

@@ -1,7 +1,6 @@
 package ru.yandex.practicum.filmorate.storage;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
@@ -40,8 +39,13 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Collection<Film> getFilms() {
-        String sql = "select * from films";
-        return jdbcTemplate.query(sql, this::mapRowFilm);
+        String sql = "select f.id, f.name, f.description, f.release_date, f.duration, f.mpa_rating_id, " +
+                "mr.name as mpa_rating_name " +
+                "from films as f inner join mpa_ratings as mr on f.mpa_rating_id = mr.id";
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowFilm);
+        setGenres(films);
+        setLikes(films);
+        return films;
     }
 
     @Override
@@ -53,13 +57,12 @@ public class FilmDbStorage implements FilmStorage {
         // Добавляем в film_genres фильм и его жанры
         genreDao.addFilmGenres(filmId, film.getGenres());
         // Возвращаем в ответ тот же фильм, но с добавлением названий жанра и рейтинга MPA
-        return getFilmWithMpaAndGenreNames(filmId, film);
+        return getFilmById(filmId);
     }
 
     @Override
     public Film updateFilm(Film film) {
         int filmId = film.getId();
-        getFilmById(filmId);
 
         String sql = "update films set name = ?, description = ?, release_date = ?, duration = ?, mpa_rating_id = ? " +
                 "where id = ?";
@@ -73,18 +76,24 @@ public class FilmDbStorage implements FilmStorage {
 
         checkAndUpdateGenres(film); // проверяем и обновляем по необходимости список жанров фильма
 
-        return getFilmWithMpaAndGenreNames(filmId, film);
+        return getFilmById(filmId);
     }
 
     @Override
     public Film getFilmById(int id) {
-        String sql = "select * from films where id = ?";
-        try {
-            return jdbcTemplate.queryForObject(sql, this::mapRowFilm, id);
-        } catch (EmptyResultDataAccessException e) {
+        String sql = "select f.id, f.name, f.description, f.release_date, f.duration, f.mpa_rating_id, " +
+                "mr.name as mpa_rating_name " +
+                "from films as f inner join mpa_ratings as mr on f.mpa_rating_id = mr.id " +
+                "where f.id = ?";
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowFilm, id);
+        if (films.isEmpty()) {
             log.error(String.format("Фильм с id = %d не существует", id));
             throw new NotFoundException(String.format("Фильм с id = %d не существует", id));
         }
+        Film film = films.get(0);
+        setGenres(Collections.singletonList(film));
+        setLikes(Collections.singletonList(film));
+        return film;
     }
 
     @Override
@@ -115,21 +124,30 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> getPopularFilms(int count) {
-        String sql = "select * from FILMS where id in (select FILM_ID from FILM_LIKES group by FILM_ID " +
-                "having count(USER_ID) order by count(USER_ID) desc) limit ?";
+        String sql = "select fl.film_id as id, f.name, f.description, f.release_date, f.duration, " +
+                "f.mpa_rating_id, mr.name as mpa_rating_name " +
+                "from film_likes as fl " +
+                "inner join films as f on fl.film_id = f.id " +
+                "inner join mpa_ratings as mr on fl.film_id = mr.id " +
+                "group by fl.film_id " +
+                "having count(fl.user_id) " +
+                "order by count(fl.user_id) desc " +
+                "limit ?";
         List<Film> popularFilms = jdbcTemplate.query(sql, this::mapRowFilm, count);
         if (popularFilms.isEmpty()) {
             return new ArrayList<>(getFilms());
         }
+        setGenres(popularFilms);
+        setLikes(popularFilms);
         return popularFilms;
     }
 
     private Film mapRowFilm(ResultSet rs, int rowNum) throws SQLException {
         int filmId = rs.getInt("id");
-        int mpaRatingId = rs.getInt("mpa_rating_id");
-        Set<Genre> filmGenres = genreDao.getFilmGenres(filmId);
-        MpaRating mpaRating = mpaRatingDao.getMpaRatingById(mpaRatingId);
-        Set<Integer> filmLikes = getFilmLikes(filmId);
+        MpaRating mpaRating = MpaRating.builder()
+                .id(rs.getInt("mpa_rating_id"))
+                .name(rs.getString("mpa_rating_name"))
+                .build();
 
         return Film.builder()
                 .id(filmId)
@@ -137,22 +155,28 @@ public class FilmDbStorage implements FilmStorage {
                 .description(rs.getString("description"))
                 .releaseDate(rs.getDate("release_date").toLocalDate())
                 .duration(rs.getInt("duration"))
-                .likes(filmLikes)
                 .mpa(mpaRating)
-                .genres(filmGenres)
                 .build();
     }
 
-    private Film getFilmWithMpaAndGenreNames(int filmId, Film film) {
-        // Получаем жанры и MPA-рейтинг с названиями из БД для ответа, т.к. по API приходят только их id.
-        Set<Genre> filmGenres = genreDao.getFilmGenres(filmId);
-        MpaRating mpaRating = mpaRatingDao.getMpaRatingById(film.getMpa().getId());
+    // fixme:
+    private void setGenres(List<Film> films) {
+        for (Film film : films) {
+            film.setGenres(genreDao.getFilmGenres(film.getId()));
+        }
+    }
 
-        return film.toBuilder()
-                .id(filmId)
-                .genres(filmGenres)
-                .mpa(mpaRating)
-                .build();
+    // fixme:
+    private void setLikes(List<Film> films) {
+        for (Film film : films) {
+            film.setLikes(getFilmLikes(film.getId()));
+        }
+    }
+
+    private Set<Integer> getFilmLikes(int filmId) {
+        String sql = "select user_id from film_likes where film_id = ?";
+        List<Integer> listLikes = jdbcTemplate.query(sql, this::mapRowLikes, filmId);
+        return new HashSet<>(listLikes);
     }
 
     private void checkAndUpdateGenres(Film film) {
@@ -166,21 +190,12 @@ public class FilmDbStorage implements FilmStorage {
         }
     }
 
-    private Set<Integer> getFilmLikes(int filmId) {
-        String sql = "select user_id from film_likes where film_id = ?";
-        List<Integer> listLikes = jdbcTemplate.query(sql, this::mapRowLikes, filmId);
-        return new HashSet<>(listLikes);
-    }
-
     private int mapRowLikes(ResultSet rs, int rowNum) throws SQLException {
         return rs.getInt("user_id");
     }
 
     private boolean checksForLikes(int filmId, int userId) {
         String sql = "select * from film_likes where film_id = ? and user_id = ?";
-        // проверяем есть ли такой фильм и пользователь
-        getFilmById(filmId);
-        userDbStorage.getUserById(userId);
         // запрос для проверки, имеются ли строки в БД
         SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(sql, filmId, userId);
         sqlRowSet.last();
