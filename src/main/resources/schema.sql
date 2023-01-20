@@ -32,8 +32,7 @@ create table if not exists users (
 
 create table if not exists friends (
     user_id integer references users(id),
-    friend_id integer references users(id),
-    is_confirmed boolean
+    friend_id integer references users(id)
 );
 
 create table if not exists film_likes (

@@ -3,6 +3,9 @@ package ru.yandex.practicum.filmorate.storage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
@@ -13,7 +16,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component("userStorageDaoImpl")
@@ -21,10 +25,12 @@ import java.util.stream.Collectors;
 public class UserDbStorage implements UserStorage {
 
     private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedJdbcTemplate;
 
     @Autowired
-    public UserDbStorage(JdbcTemplate jdbcTemplate) {
+    public UserDbStorage(JdbcTemplate jdbcTemplate, NamedParameterJdbcTemplate namedJdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+        this.namedJdbcTemplate = namedJdbcTemplate;
     }
 
     @Override
@@ -71,42 +77,16 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User addFriend(int userId, int friendId) {
-        // проверка на "самого себя" в сервисе :)
-        String sql = "select is_confirmed from friends where user_id = ? and friend_id = ?";
-        List<Boolean> isHaveFriendRequest = jdbcTemplate.query(sql, this::mapRowConfirmed, friendId, userId);
-        if (isHaveFriendRequest.size() > 0 && !isHaveFriendRequest.get(0)) {
-            String sqlForUpdate = "update friends set is_confirmed = ? where user_id = ? and friend_id = ?";
-            jdbcTemplate.update(sqlForUpdate, true, friendId, userId);
-            log.info(String.format("Пользователь id = %d подтвердил заявку пользователя id = %d",
-                    friendId, userId));
-            User user = getUserById(userId);
-            user.addFriend(friendId);
-            return user;
-        }
-        if (isHaveFriendRequest.size() > 0 && isHaveFriendRequest.get(0)) {
-            String errorMessage = String.format("Пользователь id = %d уже подтверждал заявку пользователя id = %d",
-                    friendId, userId);
+        String sqlCheck = "select * from friends where user_id = ? and friend_id = ?";
+        List<int[][]> isExist = jdbcTemplate.query(sqlCheck, this::mapRowFriends, userId, friendId);
+        if (isExist.size() > 0) {
+            String errorMessage = String.format("Пользователь id = %d уже отправлял заявку пользователю id = %d",
+                    userId, friendId);
             log.error(errorMessage);
             throw new ValidationException(errorMessage);
         }
-
-        List<Boolean> isConfirmed = jdbcTemplate.query(sql, this::mapRowConfirmed, userId, friendId);
-        if (isConfirmed.size() > 0) {
-            String errorMessage;
-            if (!isConfirmed.get(0)) {
-                errorMessage = String.format("Пользователь id = %d уже отправлял заявку пользователю id = %d",
-                        userId, friendId);
-            } else {
-                errorMessage = String.format("Пользователь id = %d уже принял заявку пользователя id = %d",
-                        friendId, userId);
-            }
-            log.error(errorMessage);
-            throw new ValidationException(errorMessage);
-        }
-        String sqlForInsert = "insert into friends values (?, ?, ?)";
-        jdbcTemplate.update(sqlForInsert, userId, friendId, false);
-        log.info(String.format("Пользователь id = %d отправил заявку в друзья пользователю id = %d",
-                userId, friendId));
+        String sqlInsert = "insert into friends values (?, ?)";
+        jdbcTemplate.update(sqlInsert, userId, friendId);
         return getUserById(userId);
     }
 
@@ -123,13 +103,6 @@ public class UserDbStorage implements UserStorage {
                 "from friends as f " +
                 "inner join users as u on f.friend_id = u.id where f.user_id = ?";
         List<User> friends = jdbcTemplate.query(sql, this::mapRowUser, userId);
-//        if (friends.isEmpty()) {
-//            String reverseSql = "select f.user_id as id, u.login, u.name, u.email, u.birthday " +
-//                    "from friends as f " +
-//                    "inner join users as u on f.user_id = u.id " +
-//                    "where f.friend_id = ?";
-//            return jdbcTemplate.query(reverseSql, this::mapRowUser, userId);
-//        }
         setFriends(friends);
         return friends;
     }
@@ -141,7 +114,6 @@ public class UserDbStorage implements UserStorage {
                 "inner join friends as f2 on f1.friend_id = f2.friend_id " +
                 "inner join users as u on f1.friend_id = u.id " +
                 "where f1.user_id = ? and f2.user_id = ?";
-        // вот тут ты просил проверку, но вроде и без нее работает? Сори если туплю, просто сейчас 03:30 :D
         List<User> commonFriends = jdbcTemplate.query(sql, this::mapRowUser, userId, otherId);
         return commonFriends;
     }
@@ -159,15 +131,24 @@ public class UserDbStorage implements UserStorage {
     }
 
     private void setFriends(List<User> users) {
-        for (User user : users) {
-            Set<Integer> userFriends = getFriends(user.getId()).stream()
-                    .map(User::getId)
-                    .collect(Collectors.toSet());
-            user.setFriends(userFriends);
+        Map<Integer, User> userMap = users.stream().collect(Collectors.toMap(User::getId, Function.identity()));
+        SqlParameterSource userIdsSqlParam = new MapSqlParameterSource("userIds", userMap.keySet());
+        String sqlFilmLikes = "select * from friends where user_id in (:userIds)";
+        List<int[][]> friends = namedJdbcTemplate.query(sqlFilmLikes, userIdsSqlParam,
+                (rs, rowNum) -> new int[][]{{rs.getInt("user_id"), rs.getInt("friend_id")}}
+        );
+
+        for (Integer userId : userMap.keySet()) {
+            for (int[][] friend : friends) {
+                if (userId == friend[0][0]) {
+                    int friendId = friend[0][1];
+                    userMap.get(userId).getFriends().add(friendId);
+                }
+            }
         }
     }
 
-    private boolean mapRowConfirmed(ResultSet rs, int rowNum) throws SQLException {
-        return rs.getBoolean("is_confirmed");
+    private int[][] mapRowFriends(ResultSet rs, int rowNum) throws SQLException {
+        return new int[][]{{rs.getInt("user_id"), rs.getInt("friend_id")}};
     }
 }
