@@ -29,12 +29,6 @@ public class GenreDaoImpl implements GenreDao {
         return jdbcTemplate.query(sql, this::mapRowGenre);
     }
 
-    public List<Genre> getGenres(List<Integer> filmIds) {
-        // TODO: проработать этот метод через updateBatch
-        String sql = "select * from genres where film_id in (?)";
-        return jdbcTemplate.query(sql, this::mapRowGenre);
-    }
-
     @Override
     public Genre getGenreById(int id) {
         String sql = "select * from genres where id = ?";
@@ -57,7 +51,7 @@ public class GenreDaoImpl implements GenreDao {
     public void addFilmGenres(int filmId, Set<Genre> filmGenres) {
         String sql = "insert into film_genres values (?, ?)";
 
-        jdbcTemplate.batchUpdate(sql, filmGenres, 50, (PreparedStatement ps, Genre genre) -> {
+        jdbcTemplate.batchUpdate(sql, filmGenres, filmGenres.size(), (PreparedStatement ps, Genre genre) -> {
             ps.setInt(1, filmId);
             ps.setInt(2, genre.getId());
         });

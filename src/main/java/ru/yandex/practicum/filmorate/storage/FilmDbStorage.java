@@ -2,6 +2,9 @@ package ru.yandex.practicum.filmorate.storage;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Component;
@@ -16,22 +19,26 @@ import ru.yandex.practicum.filmorate.storage.impl.GenreDaoImpl;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Component("filmDbStorageDaoImpl")
 @Slf4j
 public class FilmDbStorage implements FilmStorage {
 
     private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedJdbcTemplate;
     private final MpaRatingDao mpaRatingDao;
     private final GenreDaoImpl genreDao;
-
     private final UserDbStorage userDbStorage;
 
     public FilmDbStorage(JdbcTemplate jdbcTemplate,
+                         NamedParameterJdbcTemplate namedJdbcTemplate,
                          MpaRatingDao mpaRatingDao,
                          GenreDaoImpl genreDao,
                          UserDbStorage userDbStorage) {
         this.jdbcTemplate = jdbcTemplate;
+        this.namedJdbcTemplate = namedJdbcTemplate;
         this.mpaRatingDao = mpaRatingDao;
         this.genreDao = genreDao;
         this.userDbStorage = userDbStorage;
@@ -41,7 +48,8 @@ public class FilmDbStorage implements FilmStorage {
     public Collection<Film> getFilms() {
         String sql = "select f.id, f.name, f.description, f.release_date, f.duration, f.mpa_rating_id, " +
                 "mr.name as mpa_rating_name " +
-                "from films as f inner join mpa_ratings as mr on f.mpa_rating_id = mr.id";
+                "from films as f " +
+                "left join mpa_ratings as mr on f.mpa_rating_id = mr.id";
         List<Film> films = jdbcTemplate.query(sql, this::mapRowFilm);
         setGenres(films);
         setLikes(films);
@@ -106,7 +114,7 @@ public class FilmDbStorage implements FilmStorage {
                     userId, filmId));
         }
         jdbcTemplate.update(sql, filmId, userId);
-        return getFilmById(filmId); // снова вызываем этот метод для возврата фильма, но уже с лайком
+        return getFilmById(filmId);
     }
 
     @Override
@@ -159,24 +167,60 @@ public class FilmDbStorage implements FilmStorage {
                 .build();
     }
 
-    // fixme:
     private void setGenres(List<Film> films) {
-        for (Film film : films) {
-            film.setGenres(genreDao.getFilmGenres(film.getId()));
+        // Получаю данные из film_genres и сохраняю в двумерный массив
+        Map<Integer, Film> filmMap = films.stream().collect(Collectors.toMap(Film::getId, Function.identity()));
+        SqlParameterSource filmIdsSqlParam = new MapSqlParameterSource("filmIds", filmMap.keySet());
+        String sqlFilmGenres = "select * from film_genres where film_id in (:filmIds)";
+        List<int[][]> filmGenres = namedJdbcTemplate.query(sqlFilmGenres, filmIdsSqlParam,
+                (rs, rowNum) -> new int[][]{{rs.getInt("film_id"), rs.getInt("genre_id")}}
+        );
+
+        // Получаю данный из genres только по тем жанрам, которые есть у списка фильмов
+        List<Integer> genreIds = filmGenres.stream()
+                .map(t -> t[0][1])
+                .collect(Collectors.toList());
+        SqlParameterSource genreIdsSqlParam = new MapSqlParameterSource("genreIds", genreIds);
+        String sqlGenres = "select * from genres where id in (:genreIds)";
+        List<Genre> genres = namedJdbcTemplate.query(sqlGenres, genreIdsSqlParam,
+                (rs, rowNum) -> Genre.builder()
+                        .id(rs.getInt("id"))
+                        .name(rs.getString("name"))
+                        .build()
+        );
+        Map<Integer, Genre> genreMap = genres.stream().collect(Collectors.toMap(Genre::getId, Function.identity()));
+
+        // Назначаю фильмам соответствующие жанры
+        for (Integer filmId : filmMap.keySet()) {
+            for (int[][] filmGenre : filmGenres) {
+                if (filmId == filmGenre[0][0]) {
+                    int genreId = filmGenre[0][1];
+                    filmMap.get(filmId).getGenres().add(genreMap.get(genreId));
+                }
+            }
+            List<Genre> genreList = filmMap.get(filmId).getGenres().stream()
+                    .sorted(Comparator.comparing(Genre::getId))
+                    .collect(Collectors.toList());
+            filmMap.get(filmId).setGenres(new HashSet<>(genreList));
         }
     }
 
-    // fixme:
     private void setLikes(List<Film> films) {
-        for (Film film : films) {
-            film.setLikes(getFilmLikes(film.getId()));
-        }
-    }
+        Map<Integer, Film> filmMap = films.stream().collect(Collectors.toMap(Film::getId, Function.identity()));
+        SqlParameterSource filmIdsSqlParam = new MapSqlParameterSource("filmIds", filmMap.keySet());
+        String sqlFilmLikes = "select * from film_likes where film_id in (:filmIds)";
+        List<int[][]> filmLikes = namedJdbcTemplate.query(sqlFilmLikes, filmIdsSqlParam,
+                (rs, rowNum) -> new int[][]{{rs.getInt("film_id"), rs.getInt("user_id")}}
+        );
 
-    private Set<Integer> getFilmLikes(int filmId) {
-        String sql = "select user_id from film_likes where film_id = ?";
-        List<Integer> listLikes = jdbcTemplate.query(sql, this::mapRowLikes, filmId);
-        return new HashSet<>(listLikes);
+        for (Integer filmId : filmMap.keySet()) {
+            for (int[][] filmLike : filmLikes) {
+                if (filmId == filmLike[0][0]) {
+                    int userId = filmLike[0][1];
+                    filmMap.get(filmId).getLikes().add(userId);
+                }
+            }
+        }
     }
 
     private void checkAndUpdateGenres(Film film) {
@@ -188,10 +232,6 @@ public class FilmDbStorage implements FilmStorage {
             genreDao.deleteFilmGenres(filmId);
             genreDao.addFilmGenres(filmId, filmGenres);
         }
-    }
-
-    private int mapRowLikes(ResultSet rs, int rowNum) throws SQLException {
-        return rs.getInt("user_id");
     }
 
     private boolean checksForLikes(int filmId, int userId) {

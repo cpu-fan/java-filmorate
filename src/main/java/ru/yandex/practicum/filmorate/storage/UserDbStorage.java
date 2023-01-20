@@ -30,7 +30,9 @@ public class UserDbStorage implements UserStorage {
     @Override
     public Collection<User> getUsers() {
         String sql = "select * from users";
-        return jdbcTemplate.query(sql, this::mapRowUser);
+        List<User> users = jdbcTemplate.query(sql, this::mapRowUser);
+        setFriends(users);
+        return users;
     }
 
     @Override
@@ -63,6 +65,7 @@ public class UserDbStorage implements UserStorage {
             log.error(String.format("Пользователь с id = %d не найден", id));
             throw new NotFoundException(String.format("Пользователь с id = %d не найден", id));
         }
+        setFriends(users);
         return users.get(0);
     }
 
@@ -120,7 +123,6 @@ public class UserDbStorage implements UserStorage {
                 "from friends as f " +
                 "inner join users as u on f.friend_id = u.id where f.user_id = ?";
         List<User> friends = jdbcTemplate.query(sql, this::mapRowUser, userId);
-        // fixme:
 //        if (friends.isEmpty()) {
 //            String reverseSql = "select f.user_id as id, u.login, u.name, u.email, u.birthday " +
 //                    "from friends as f " +
@@ -128,33 +130,24 @@ public class UserDbStorage implements UserStorage {
 //                    "where f.friend_id = ?";
 //            return jdbcTemplate.query(reverseSql, this::mapRowUser, userId);
 //        }
+        setFriends(friends);
         return friends;
     }
 
     @Override
     public List<User> getCommonFriends(int userId, int otherId) {
-        List<User> userFriends = getFriends(userId);
-        List<User> otherUserFriends = getFriends(otherId);
-        return userFriends.stream()
-                .filter(otherUserFriends::contains)
-                .collect(Collectors.toList());
-        // fixme:
-        // вот тут я не понимаю, вроде возвращается что нужно, но в таком именно исполнении почему-то тесты
-        // тесты в постмане не проходят
-//        String sql = "select f.friend_id as id, u.login, u.name, u.email, u.birthday " +
-//                "from friends as f " +
-//                "inner join users as u on f.friend_id = u.id " +
-//                "where f.user_id = ? or f.user_id = ? " +
-//                "group by id";
-//        List<User> commonFriends = jdbcTemplate.query(sql, this::mapRowUser, userId, otherId);
-//        return commonFriends;
+        String sql = "select f1.friend_id as id, u.login, u.name, u.email, u.birthday " +
+                "from friends as f1 " +
+                "inner join friends as f2 on f1.friend_id = f2.friend_id " +
+                "inner join users as u on f1.friend_id = u.id " +
+                "where f1.user_id = ? and f2.user_id = ?";
+        // вот тут ты просил проверку, но вроде и без нее работает? Сори если туплю, просто сейчас 03:30 :D
+        List<User> commonFriends = jdbcTemplate.query(sql, this::mapRowUser, userId, otherId);
+        return commonFriends;
     }
 
     private User mapRowUser(ResultSet rs, int rowNum) throws SQLException {
         int userId = rs.getInt("id");
-        Set<Integer> userFriends = getFriends(userId).stream()
-                .map(User::getId)
-                .collect(Collectors.toSet());
 
         return User.builder()
                 .id(userId)
@@ -162,8 +155,16 @@ public class UserDbStorage implements UserStorage {
                 .name(rs.getString("name"))
                 .email(rs.getString("email"))
                 .birthday(rs.getDate("birthday").toLocalDate())
-                .friends(userFriends)
                 .build();
+    }
+
+    private void setFriends(List<User> users) {
+        for (User user : users) {
+            Set<Integer> userFriends = getFriends(user.getId()).stream()
+                    .map(User::getId)
+                    .collect(Collectors.toSet());
+            user.setFriends(userFriends);
+        }
     }
 
     private boolean mapRowConfirmed(ResultSet rs, int rowNum) throws SQLException {
