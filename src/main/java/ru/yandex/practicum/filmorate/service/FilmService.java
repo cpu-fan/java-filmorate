@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -20,18 +21,19 @@ public class FilmService {
     private final UserService userService;
 
     @Autowired
-    public FilmService(FilmStorage filmStorage, UserService userService) {
+    public FilmService(@Qualifier("filmDbStorageDaoImpl") FilmStorage filmStorage, UserService userService) {
         this.filmStorage = filmStorage;
         this.userService = userService;
     }
 
     public Collection<Film> getAllFilms() {
+        log.info("Запрошен список фильмов");
         return filmStorage.getFilms();
     }
 
     public Film getFilmById(int id) {
-        Film film = filmStorage.getFilmById(id);
-        return film;
+        log.info("Запрошен фильм id = " + id);
+        return filmStorage.getFilmById(id);
     }
 
     public Film createFilm(Film film) {
@@ -42,10 +44,10 @@ public class FilmService {
     }
 
     public Film updateFilm(Film film) {
+        filmStorage.getFilmById(film.getId());
         releaseCheck(film);
-        checkAndUpdateFilm(film);
         log.info("Внесены обновления в информацию для фильма id = " + film.getId());
-        return film;
+        return filmStorage.updateFilm(film);
     }
 
     private void releaseCheck(Film film) {
@@ -55,18 +57,14 @@ public class FilmService {
         }
     }
 
-    private void checkAndUpdateFilm(Film film) {
-        int id = film.getId();
-        filmStorage.getFilmById(id);
-        filmStorage.updateFilm(id, film);
-    }
-
     public Film addLike(int filmId, int userId) {
+        log.info("Добавление лайка фильму id = " + filmId + " пользователем id = " + userId);
         userService.getUserById(userId);
         return filmStorage.addLike(filmId, userId);
     }
 
     public Film deleteLike(int filmId, int userId) {
+        log.info("Удаление лайка у фильма id = " + filmId + " пользователем id = " + userId);
         userService.getUserById(userId);
         return filmStorage.deleteLike(filmId, userId);
     }
@@ -76,6 +74,7 @@ public class FilmService {
             log.error("Недопустимое значение count: " + count);
             throw new ValidationException("Недопустимое значение count: " + count);
         }
+        log.info("Запрошен список топ-" + count + " популярных фильмов");
         return filmStorage.getPopularFilms(count);
     }
 }

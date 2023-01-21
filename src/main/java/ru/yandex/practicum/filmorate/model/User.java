@@ -4,7 +4,9 @@ import lombok.*;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 @ToString
@@ -33,13 +35,9 @@ public class User {
 
     public Set<Integer> getFriends() {
         if (friends == null) {
-            setFriends();
+            this.friends = new HashSet<>();
         }
         return friends;
-    }
-
-    private void setFriends() {
-        this.friends = new HashSet<>();
     }
 
     public void addFriend(int friendId) {
@@ -48,5 +46,14 @@ public class User {
 
     public void removeFriend(int friendId) {
         friends.remove(friendId);
+    }
+
+    public Map<String, Object> toMap() {
+        Map<String, Object> values = new HashMap<>();
+        values.put("login", login);
+        values.put("name", name);
+        values.put("email", email);
+        values.put("birthday", birthday);
+        return values;
     }
 }

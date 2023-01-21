@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -13,6 +14,7 @@ import ru.yandex.practicum.filmorate.model.ErrorResponse;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice("ru.yandex.practicum.filmorate.controller")
+@Slf4j
 public class ErrorHandler {
 
     @ExceptionHandler
@@ -39,6 +41,7 @@ public class ErrorHandler {
     @ExceptionHandler
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleThrowable(final Throwable e) {
+        log.error("Произошла непредвиденная ошибка: ", e);
         return new ErrorResponse("Произошла непредвиденная ошибка");
     }
 }
