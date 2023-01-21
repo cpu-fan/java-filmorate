@@ -168,59 +168,28 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private void setGenres(List<Film> films) {
-        // Получаю данные из film_genres и сохраняю в двумерный массив
         Map<Integer, Film> filmMap = films.stream().collect(Collectors.toMap(Film::getId, Function.identity()));
         SqlParameterSource filmIdsSqlParam = new MapSqlParameterSource("filmIds", filmMap.keySet());
-        String sqlFilmGenres = "select * from film_genres where film_id in (:filmIds)";
-        List<int[][]> filmGenres = namedJdbcTemplate.query(sqlFilmGenres, filmIdsSqlParam,
-                (rs, rowNum) -> new int[][]{{rs.getInt("film_id"), rs.getInt("genre_id")}}
-        );
-
-        // Получаю данный из genres только по тем жанрам, которые есть у списка фильмов
-        List<Integer> genreIds = filmGenres.stream()
-                .map(t -> t[0][1])
-                .collect(Collectors.toList());
-        SqlParameterSource genreIdsSqlParam = new MapSqlParameterSource("genreIds", genreIds);
-        String sqlGenres = "select * from genres where id in (:genreIds)";
-        List<Genre> genres = namedJdbcTemplate.query(sqlGenres, genreIdsSqlParam,
-                (rs, rowNum) -> Genre.builder()
-                        .id(rs.getInt("id"))
-                        .name(rs.getString("name"))
-                        .build()
-        );
-        Map<Integer, Genre> genreMap = genres.stream().collect(Collectors.toMap(Genre::getId, Function.identity()));
-
-        // Назначаю фильмам соответствующие жанры
-        for (Integer filmId : filmMap.keySet()) {
-            for (int[][] filmGenre : filmGenres) {
-                if (filmId == filmGenre[0][0]) {
-                    int genreId = filmGenre[0][1];
-                    filmMap.get(filmId).getGenres().add(genreMap.get(genreId));
-                }
-            }
-            List<Genre> genreList = filmMap.get(filmId).getGenres().stream()
-                    .sorted(Comparator.comparing(Genre::getId))
-                    .collect(Collectors.toList());
-            filmMap.get(filmId).setGenres(new HashSet<>(genreList));
-        }
+        String sqlGenres = "select g.id as id, g.name as name, fg.film_id as film_id from genres as g " +
+                "inner join film_genres as fg on g.id = fg.genre_id " +
+                "where fg.film_id in (:filmIds) " +
+                "order by id";
+        namedJdbcTemplate.query(sqlGenres, filmIdsSqlParam, rs -> {
+            Genre genre = Genre.builder()
+                    .id(rs.getInt("id"))
+                    .name(rs.getString("name"))
+                    .build();
+            filmMap.get(rs.getInt("film_id")).getGenres().add(genre);
+        });
     }
 
     private void setLikes(List<Film> films) {
         Map<Integer, Film> filmMap = films.stream().collect(Collectors.toMap(Film::getId, Function.identity()));
         SqlParameterSource filmIdsSqlParam = new MapSqlParameterSource("filmIds", filmMap.keySet());
-        String sqlFilmLikes = "select * from film_likes where film_id in (:filmIds)";
-        List<int[][]> filmLikes = namedJdbcTemplate.query(sqlFilmLikes, filmIdsSqlParam,
-                (rs, rowNum) -> new int[][]{{rs.getInt("film_id"), rs.getInt("user_id")}}
-        );
-
-        for (Integer filmId : filmMap.keySet()) {
-            for (int[][] filmLike : filmLikes) {
-                if (filmId == filmLike[0][0]) {
-                    int userId = filmLike[0][1];
-                    filmMap.get(filmId).getLikes().add(userId);
-                }
-            }
-        }
+        String sqlFilmLikes = "select film_id, user_id from film_likes where film_id in (:filmIds)";
+        namedJdbcTemplate.query(sqlFilmLikes, filmIdsSqlParam, rs -> {
+            filmMap.get(rs.getInt("film_id")).getLikes().add(rs.getInt("user_id"));
+        });
     }
 
     private void checkAndUpdateGenres(Film film) {

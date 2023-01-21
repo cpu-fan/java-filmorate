@@ -115,6 +115,7 @@ public class UserDbStorage implements UserStorage {
                 "inner join users as u on f1.friend_id = u.id " +
                 "where f1.user_id = ? and f2.user_id = ?";
         List<User> commonFriends = jdbcTemplate.query(sql, this::mapRowUser, userId, otherId);
+        setFriends(commonFriends);
         return commonFriends;
     }
 
@@ -134,18 +135,9 @@ public class UserDbStorage implements UserStorage {
         Map<Integer, User> userMap = users.stream().collect(Collectors.toMap(User::getId, Function.identity()));
         SqlParameterSource userIdsSqlParam = new MapSqlParameterSource("userIds", userMap.keySet());
         String sqlFilmLikes = "select * from friends where user_id in (:userIds)";
-        List<int[][]> friends = namedJdbcTemplate.query(sqlFilmLikes, userIdsSqlParam,
-                (rs, rowNum) -> new int[][]{{rs.getInt("user_id"), rs.getInt("friend_id")}}
-        );
-
-        for (Integer userId : userMap.keySet()) {
-            for (int[][] friend : friends) {
-                if (userId == friend[0][0]) {
-                    int friendId = friend[0][1];
-                    userMap.get(userId).getFriends().add(friendId);
-                }
-            }
-        }
+        namedJdbcTemplate.query(sqlFilmLikes, userIdsSqlParam, rs -> {
+            userMap.get(rs.getInt("user_id")).getFriends().add(rs.getInt("friend_id"));
+        });
     }
 
     private int[][] mapRowFriends(ResultSet rs, int rowNum) throws SQLException {
