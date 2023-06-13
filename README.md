@@ -3,4 +3,4 @@
 
 Схема БД:
 
-<img src="src/main/resources/filmorate-db-schema.png" alt="filmorate-db-schema.svg" width="500"/>
+<img src="src/main/resources/filmorate-db-schema.png" alt="filmorate-db-schema.svg" width="1000"/>
